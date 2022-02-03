@@ -1,0 +1,148 @@
+---
+title: "IRT"
+author: "Taylor Brown"
+date: "02/02/2022"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=TRUE, cache = FALSE}
+
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(knitr)
+library(dplyr)
+library(mirt)
+library(naniar)
+library(Rcpp)
+library(haven)
+library(VIM)
+```
+
+#Define data and load packages
+```{r}
+data<-data<-haven::read_sav("all_data_cleaned_and_mean_replaced_IRT.sav")%>%
+  mutate_if(is.character, as.factor)
+
+
+
+```
+
+#view data and define the scale
+```{r}
+glimpse(data)
+
+scale <-(data[,44:51])
+
+head(scale, 8) 
+
+```
+
+#Fit the graded response model using the 'mirt' R package.
+```{r}
+
+mod1 <- (mirt(scale, 1, verbose = FALSE, itemtype = 'graded', SE = TRUE))
+
+M2(mod1, type = "C2", calcNull = FALSE, na.rm = TRUE)
+
+```
+
+#Check missing values
+
+```{r}
+
+naniar::mcar_test(scale)
+
+```
+
+
+#Examine items fit
+
+```{r}
+
+itemfit(mod1, na.rm = TRUE)
+
+```
+
+#Examine IRT parameters 
+---
+(0 = non discriminative; 0.01–0.34 =
+very low; 0.35–0.64 = low; 0.65–1.34 = moderate; 1.35–1.69 = high; >1.70 = very high; Baker, 2001)
+---
+
+```{r}
+
+IRT_parms <- coef(mod1, IRTpars = TRUE, simplify = TRUE, na.rm=TRUE)
+IRT_parms$items
+
+```
+
+#Examine Factor analysis parameters
+
+```{r}
+
+summary(mod1)
+
+```
+
+##Produce IRT plots - Category characteristic Curve
+
+```{r plot1, echo=FALSE}
+
+plot(mod1, type='trace', which.item = c(1,2,3,4,5,6,7,8), facet_items=T, 
+     as.table = TRUE, auto.key=list(points=F, lines=T, columns=4, space = 'top', cex = .8), 
+     theta_lim = c(-3, 3), 
+     main = "")
+
+
+```
+
+
+#Item information Curve
+
+```{r plot2, echo=FALSE}
+
+plot(mod1, type='infotrace', which.item = c(1,2,3,4,5,6,7,8), facet_items=T, 
+     as.table = TRUE, auto.key=list(points=F, lines=T, columns=1, space = 'right', cex = .8), 
+     theta_lim = c(-3, 3), 
+     main="")
+
+```
+
+#Scale informaiton and conditional standard errors
+
+```{r plot3, echo=FALSE}
+
+plot(mod1, type = 'infoSE', theta_lim = c(-3, 3), 
+     main="")
+
+```
+
+#conditional reliability
+
+```{r plot4, echo=FALSE}
+
+plot(mod1, type = 'rxx', theta_lim = c(-3, 3), 
+     main="" )
+
+## Single IRT reliability is also produced ##
+
+marginal_rxx(mod1)
+
+
+```
+
+#Scale characteristic Curve
+
+
+```{r plot5, echo=FALSE}
+
+plot(mod1, type = 'score', theta_lim = c(-3, 3), main = "")
+
+```
+
+# THE END
